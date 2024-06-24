@@ -6,8 +6,7 @@ setup(
     version='1.0.0',
     description='TMM pra engenharia acustica',
     install_requires=[
-        'pandas==0.23.3',
-        'numpy>=1.14.5',
-        'matplotlib>=2.2.0'],
+        'numpy>=1.14.0',
+        'matplotlib>=2.1.2'],
     author='Bruno Yukio Miyata Silva',
 )
