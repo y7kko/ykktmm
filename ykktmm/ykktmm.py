@@ -1,11 +1,3 @@
-"""
-ykktmm 3[edição Lista 2 de controle de ruido] (24/06/24)
-Alterações:
-    * material.solveZs() considera a impedância de radiação
-    * Nova forma de checar variaveis nao inicializadas(= DEFAULT)
-    * Agora a dependencia da frequencia para as condições de contorno sao consideradas
-"""
-
 import numpy as np # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 
