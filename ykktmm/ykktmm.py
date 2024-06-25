@@ -150,7 +150,6 @@ class material:
 
         #Impedância de radiação conhecida
         else:
-            zl = 1
             zs = tg[0,1] + (tg[0,0]*zl)/self.layerlist[-1].area
             zs /= tg[1,1] + (tg[1,0]*zl)/self.layerlist[-1].area
             zs *= self.layerlist[0].area
