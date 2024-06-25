@@ -1,3 +1,11 @@
+"""
+ykktmm 3[edição Lista 2 de controle de ruido] (25/06/24)
+Alterações:
+    * utils.dB() agora evita uma divisão termo a termo quando desnecessário
+    * Zs tem um bug resolvido
+    * Nova classe air_props
+"""
+
 import numpy as np # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 
@@ -5,16 +13,24 @@ def version():
     return "ykktmm 3 [24/06/24]"
 
 DEFAULT = object()
-rho0 = 1.21
-c0 = 343
 
-#Numa proxima versao apenas
-class templates:
-    def tubo(self):
-        return
-    def barrier(self):
-        return
+class air_props:
+    _rho0 = 1.21
+    _c0 = 343
+
+    @staticmethod
+    def rho0(new_rho0 = DEFAULT):
+        if new_rho0 is DEFAULT:
+            return air_props._rho0
+        else:
+            air_props._rho0 = new_rho0
     
+    @staticmethod
+    def c0(new_c0 = DEFAULT):
+        if new_c0 is DEFAULT:
+            return air_props._c0
+        else:
+            air_props._c0 = new_c0
 
 """
 Implementação da classe camada
@@ -39,9 +55,9 @@ class layer:
     #Atualiza zc e kc para campo livre caso a variavel nao tenha sido inicializada
     def updateProperties(self):
         if self.zc is DEFAULT:
-            self.zc = rho0*c0*np.ones(self.freq.shape)
+            self.zc = air_props.rho0()*air_props.c0()*np.ones(self.freq.shape)
         if self.kc is DEFAULT:
-            self.kc = 2*np.pi*self.freq/c0
+            self.kc = 2*np.pi*self.freq/air_props.c0()
 
         
     def setFreqVec(self,f):
@@ -90,6 +106,7 @@ class material:
 
     #Define as condições de contorno
     def setBound(self,p0,q0):
+        # Caso seja independente da frequência, criar um puta vetor independente da frequência
         if not (type(p0) == np.ndarray or type(p0) == list):
             p0 = p0*np.ones(self.freq.shape)
         if not (type(q0) == np.ndarray or type(q0) == list):
@@ -138,6 +155,7 @@ class material:
         
             return np.transpose(result)
         
+        #Se as condições de contorno não foram declaradas
         else:
             return
 
@@ -146,14 +164,15 @@ class material:
         tg = self.solveTg()
         #Paredes Rígidas
         if zl is DEFAULT:
+            # print("zl eh default")    
             zs = self.layerlist[0].area * (tg[0,0]/tg[1,0])
-
         #Impedância de radiação conhecida
         else:
+            # print("zl necas default")
             zs = tg[0,1] + (tg[0,0]*zl)/self.layerlist[-1].area
-            zs /= tg[1,1] + (tg[1,0]*zl)/self.layerlist[-1].area
+            zs /= (tg[1,1] + (tg[1,0]*zl)/self.layerlist[-1].area)
             zs *= self.layerlist[0].area
-
+        
         return zs
 
     # Checa se as condições de contorno foram determinadas
@@ -169,16 +188,21 @@ class material:
 
 class utils():
     def absort(zs):
-        return 1 - (np.abs((zs-rho0*c0)/(zs+rho0*c0)))**2
+        return 1 - (np.abs((zs-air_props.rho0()*air_props.c0())/(zs+air_props.rho0()*air_props.c0())))**2
     
     def dB(val, ref=1):
+        #apenas realiza uma divisão termo a termo quando necessário
+        if ref == 1:
+            return 20*np.log10(abs(val))
+        
         return 20*np.log10(abs(val)/ref)
+        
 
     def delany_basley(f,sigma):
         #Ref: Cox pg 141
-        X = (rho0*f)/sigma
-        zc = rho0*c0*(1 + 0.0571*(X**-0.754) - 1j*0.087*(X**-0.732))
-        kc = ((2*np.pi*f)/c0)*(1 + 0.0978*(X**-0.700) + -0.189j*(X**-0.595))
+        X = (air_props.rho0()*f)/sigma
+        zc = air_props.rho0()*air_props.c0()*(1 + 0.0571*(X**-0.754) - 1j*0.087*(X**-0.732))
+        kc = ((2*np.pi*f)/air_props.c0())*(1 + 0.0978*(X**-0.700) + -0.189j*(X**-0.595))
         return zc,kc
     
     def plot_cuxticks(minorticks=False,bandstyle="oct",showaudible=False,axis=plt): #Não me orgulho dessa função

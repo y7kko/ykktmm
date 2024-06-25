@@ -1,1 +1,1 @@
-from .ykktmm import material, layer, utils, rho0, c0
+from .ykktmm import material, layer, utils, air_props

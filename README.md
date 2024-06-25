@@ -16,3 +16,7 @@ No Colab é a mesma coisa só que com um "!" antes:
 ```
 !pip install git+https://github.com/y7kko/ykktmm.git
 ```
+
+## Problemas(e incertezas)
+
+* `solveEq()` apresenta valores esquisitos e incertos
