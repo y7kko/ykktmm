@@ -1,9 +1,8 @@
 """
-ykktmm 3[edição Lista 2 de controle de ruido] (25/06/24)
+ykktmm 3[edição Lista 2 de controle de ruido] (26/06/24)
 Alterações:
-    * utils.dB() agora evita uma divisão termo a termo quando desnecessário
-    * Zs tem um bug resolvido
-    * Nova classe air_props
+    * air_props agora tem varios props
+    * JCA()
 """
 
 import numpy as np # type: ignore
@@ -15,8 +14,16 @@ def version():
 DEFAULT = object()
 
 class air_props:
+    #densidade do ar
     _rho0 = 1.21
     _c0 = 343
+    #numero de prandtl
+    _prandtl = 0.71
+    _eta = 1.82E-5
+    #
+    _gamma = 1.4
+    #pressao atmosferica
+    _p0 = 101320
 
     @staticmethod
     def rho0(new_rho0 = DEFAULT):
@@ -31,6 +38,39 @@ class air_props:
             return air_props._c0
         else:
             air_props._c0 = new_c0
+    
+    @staticmethod
+    def prandtl(new_prandtl = DEFAULT):
+        if new_prandtl is DEFAULT:
+            return air_props._prandtl
+        else:
+            air_props._prandtl = new_prandtl
+            
+    @staticmethod
+    def eta(new_eta = DEFAULT):
+        if new_eta is DEFAULT:
+            return air_props._eta
+        else:
+            air_props._eta = new_eta
+    
+    @staticmethod
+    def gamma(new_gamma = DEFAULT):
+        if new_gamma is DEFAULT:
+            return air_props._gamma
+        else:
+            air_props._gamma = new_gamma
+    
+    @staticmethod
+    def p0(new_p0 = DEFAULT):
+        if new_p0 is DEFAULT:
+            return air_props._p0
+        else:
+            air_props._p0 = new_p0
+    
+    #retorna todas as propriedades definidas
+    @staticmethod
+    def current_props():
+        return
 
 """
 Implementação da classe camada
@@ -64,7 +104,7 @@ class layer:
         self.freq = f
         self.updateProperties()
 
-    #getters e setters servem para facilitar a expansão do código
+
     def getMatrix(self):
         one_vector = np.ones(self.freq.shape) #Força a tudo ser do mesmo tamanho na direcao da frequencia
         zero_vector = np.zeros(self.freq.shape) #Otimizando a performance
@@ -74,16 +114,22 @@ class layer:
                 print("Utilize o argumento tam para definir o comprimento da camada")
                 print("A camada será ignorada(Matriz identidade)")
             arg = self.kc*self.tam
-            matrix = np.array([[np.cos(arg)   ,   1j*(self.zc/self.area)*np.sin(arg)],
-                            [1j*(self.area/self.zc)*np.sin(arg) ,   np.cos(arg)]])
+            matrix = np.array([
+                [np.cos(arg)   ,   1j*(self.zc/self.area)*np.sin(arg)],
+                [1j*(self.area/self.zc)*np.sin(arg) ,   np.cos(arg)]
+                ])
 
         elif (self.assoc == "parallel") or self.assoc == "//": #Eventualmente renomear
-            matrix = np.array([[ one_vector  ,    zero_vector            ],
-                            [ one_vector*(self.area/self.zc)  , one_vector]])
+            matrix = np.array([
+                [ one_vector  ,    zero_vector            ],
+                [ one_vector*(self.area/self.zc)  , one_vector]
+                ])
         
         elif (self.assoc == "barrier") or self.assoc == "||":
-            matrix = np.array([[ one_vector  ,    one_vector*(self.zc/self.area)],
-                            [zero_vector ,       one_vector               ]])
+            matrix = np.array([
+                [one_vector  ,    one_vector*(self.zc/self.area)],
+                [zero_vector ,       one_vector               ]
+                ])
             
         return matrix
 
@@ -137,7 +183,7 @@ class material:
             result = np.zeros([tg[0,0].shape[0],2],dtype=complex)
             for i in range(tg[0,0].shape[0]):
                 """
-                A forma que eu montei o código resultou em uma estrutura de dados meio esquisita
+                A forma que eu montei o código resultou em uma estrutura meio esquisita
                 Então eu tenho que manualmente remontar a matriz para cada frequência
                 """
                 tn = np.array([
@@ -193,9 +239,9 @@ class utils():
     def dB(val, ref=1):
         #apenas realiza uma divisão termo a termo quando necessário
         if ref == 1:
-            return 20*np.log10(abs(val))
+            return 20*np.log10(np.abs(val))
         
-        return 20*np.log10(abs(val)/ref)
+        return 20*np.log10(np.abs(val)/ref)
         
 
     def delany_basley(f,sigma):
@@ -204,6 +250,29 @@ class utils():
         zc = air_props.rho0()*air_props.c0()*(1 + 0.0571*(X**-0.754) - 1j*0.087*(X**-0.732))
         kc = ((2*np.pi*f)/air_props.c0())*(1 + 0.0978*(X**-0.700) + -0.189j*(X**-0.595))
         return zc,kc
+    
+        #implementando pra retornar zc e kc para posteriormente embutir no meu código
+    def JCA(f, sigma,tortuosidade, phi,comp_viscoso,comp_termico):
+        omega = 2*np.pi*f
+        eta = air_props.eta()
+        gamma = air_props.gamma()
+        Pr = air_props._prandtl()
+        p0 = air_props.p0()
+        rho0 = air_props.rho0()
+
+
+        rhoef = np.sqrt( 1 + (4j*omega*rho0*eta*(tortuosidade**2))/((sigma*phi*comp_viscoso)**2) )
+        rhoef = 1 + ((phi*sigma)/(1j*omega*rho0*tortuosidade)) * rhoef
+        rhoef *= rho0*tortuosidade
+
+        kef = np.sqrt(1 + 1j*(omega*Pr*rho0*(comp_termico**2))/(16*eta))
+        kef = 1 - ( 8j*eta / (omega*Pr*(comp_termico**2)*rho0) )*kef
+        kef = gamma - (gamma-1)/kef
+        kef = gamma*p0/kef
+
+        zc = np.sqrt(rhoef*kef)
+        kc = omega*np.sqrt(rhoef/kef)
+        return zc, kc
     
     def plot_cuxticks(minorticks=False,bandstyle="oct",showaudible=False,axis=plt): #Não me orgulho dessa função
         fr_minmax = axis.xlim()
