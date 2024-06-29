@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
     name='ykktmm',
     packages=find_packages(include=['ykktmm']),
-    version='1.0.1',
+    version='1.0.2',
     description='TMM pra Acustica',
     install_requires=[
         'numpy>=1.14.0',

@@ -20,7 +20,7 @@ class air_props:
     #numero de prandtl
     _prandtl = 0.71
     _eta = 1.82E-5
-    #
+    #cpcv
     _gamma = 1.4
     #pressao atmosferica
     _p0 = 101320
@@ -85,7 +85,7 @@ class layer:
     kc: Número de onda do Meio (a ser calculado por fora)
     assoc: Tipo de associação (por padrão é em série)
     """
-    def __init__(self,area,tam=0,zc=DEFAULT,kc=DEFAULT,assoc=">"): #Tem muita coisa errada aqui
+    def __init__(self,area=1,tam=0,zc=DEFAULT,kc=DEFAULT,assoc=">"):
         self.area = area
         self.tam = tam
         self.zc = zc
@@ -236,6 +236,7 @@ class utils():
     def absort(zs):
         return 1 - (np.abs((zs-air_props.rho0()*air_props.c0())/(zs+air_props.rho0()*air_props.c0())))**2
     
+
     def dB(val, ref=1):
         #apenas realiza uma divisão termo a termo quando necessário
         if ref == 1:
@@ -250,8 +251,8 @@ class utils():
         zc = air_props.rho0()*air_props.c0()*(1 + 0.0571*(X**-0.754) - 1j*0.087*(X**-0.732))
         kc = ((2*np.pi*f)/air_props.c0())*(1 + 0.0978*(X**-0.700) + -0.189j*(X**-0.595))
         return zc,kc
-    
-        #implementando pra retornar zc e kc para posteriormente embutir no meu código
+
+
     def JCA(f, sigma,tortuosidade, phi,comp_viscoso,comp_termico):
         omega = 2*np.pi*f
         eta = air_props.eta()
