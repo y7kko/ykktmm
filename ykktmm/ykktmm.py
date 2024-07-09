@@ -257,7 +257,7 @@ class utils():
         omega = 2*np.pi*f
         eta = air_props.eta()
         gamma = air_props.gamma()
-        Pr = air_props._prandtl()
+        Pr = air_props.prandtl()
         p0 = air_props.p0()
         rho0 = air_props.rho0()
 
